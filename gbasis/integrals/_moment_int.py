@@ -1,5 +1,7 @@
 """Multipole moment integrals involving Contracted Cartesian Gaussians."""
 import numpy as np
+import json
+import pickle
 
 
 # FIXME: returns nan when exponent is zero

@@ -207,8 +207,98 @@ def make_contractions(basis_dict, atoms, coords):
     if len(atoms) != coords.shape[0]:
         raise ValueError("Number of atoms must be equal to the number of rows in the coordinates.")
 
+    # implement screening before saving basis as a tuple
+    overlap_screen = True
+    if overlap_screen:
+        eps = 1E-20  # Tolerance for screening
+        le = np.log(eps)
+        dtest = []
+
+        """ Each atom has several shells. Each shell on each atom, needs a list.
+        The list controls if the shell interacts with the other shells.
+
+        Each atom also needs a list saying if it even bothers interacting with 
+        the shells on another atom at all."""
+
+        # loop over all atoms, index is "A"
+        counnt = 0
+        max_rij_term = np.zeros((len(atoms), len(atoms)), dtype=float)
+        max_shell_term = []
+        rij = []
+        prefactor = []
+        for A, (atomA, coordA) in enumerate(zip(atoms, coords)):
+            print(atomA)
+            # loop over all atoms, index is "B"
+            for B, (atomB, coordB) in enumerate(zip(atoms, coords)):
+                shells_A2B = []
+                delta_coords = []
+                delta = np.sqrt(np.dot(coordA - coordB, coordA - coordB))
+                # loop over all shells on atomA
+                for S, (angmom_s, exp_s, coeff_s) in enumerate(basis_dict[atomA]):
+                    alpha_s = min(exp_s)
+                    # loop over all shells on atomB
+                    for T, (angmom_t, exp_t, coeff_t) in enumerate(basis_dict[atomB]):
+                        alpha_t = min(exp_t)
+                        # calculate distance
+                        d_AsBt = np.sqrt(-(alpha_s + alpha_t) / (alpha_s * alpha_t) * le)
+                        shells_A2B.append(d_AsBt)
+                        delta_coords.append(delta)
+                        # print(d_AsBt)
+                        counnt += 1
+                        dtest.append(d_AsBt)
+                max_rij_term[A, B] = max(np.asarray(shells_A2B))
+            max_shell_term.append(shells_A2B)
+            rij.append(delta_coords)
+        max_shell_term, rij = tuple(max_shell_term), tuple(rij)
+        dtest = np.asarray(dtest)
+        print('minimum: {}  maximum: {}  average: {}  std_dev: {}'.format(
+            np.min(dtest), np.max(dtest), np.average(dtest), np.std(dtest)
+        ))
+        #print(counnt)
+        #print(max_rij_term)
+        #print(len(rij[0]))
+        assert np.shape(rij[0]) == np.shape(max_shell_term[0])
+        mask = np.where(np.asarray(rij) > np.asarray(max_shell_term), False, True)
+        #print("testing:", np.shape(mask))
+
+    ##############################
+    #
+    # Make masks for screening
+    #   1) outer loop over all shells
+    #       1a) for each atom, loop over all shells
+    #   2) inner loop over all shells
+    #       2b) for each atom, loop over all shells
+    #
+    ##############################
+    import time
+    starrt = time.time()
+    screen_mask = []
+    eps = 1E-20  # Tolerance for screening
+    le = np.log(eps)
+    #################################################################################
+    for A, (atom_a, coord_a) in enumerate(zip(atoms,coords)):                       #
+        for angmom_a, exp_a, coeff_a in basis_dict[atom_a]:                         #
+            alpha_a = min(exp_a)                                                    #
+            mask = []                                                               #
+            #########################################################################
+            for B, (atom_b, coord_b) in enumerate(zip(atoms, coords)):              #
+                for angmom_b, exp_b, coeff_b in basis_dict[atom_b]:                 #
+                    alpha_b = min(exp_a)                                            #
+                    #################################################################
+                    cutoff = np.sqrt(-(alpha_a + alpha_b) / (alpha_a * alpha_b) * le)
+                    if np.linalg.norm(coord_a-coord_b) > cutoff and overlap_screen:
+                        mask.append(False) # do not evaluate these two shells
+                    else:
+                        mask.append(True)  # do evaluate these two shells
+            screen_mask.append(np.asarray(mask, dtype=bool))
+    endd = time.time()
+    print("screening took: ", endd - starrt)
     basis = []
+    index = 0
+    # screen_mask : type = np.array,
+    #               length = # shells in system
     for atom, coord in zip(atoms, coords):
         for angmom, exps, coeffs in basis_dict[atom]:
-            basis.append(GeneralizedContractionShell(angmom, coord, coeffs, exps))
+            basis.append(GeneralizedContractionShell(angmom, coord, coeffs, exps, screen_mask[index], index)) # , screen_mask[index]
+            index += 1
     return tuple(basis)

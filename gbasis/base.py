@@ -64,6 +64,7 @@ class BaseGaussianRelatedArray(abc.ABC):
             tuple(each_contractions) for each_contractions in contractions
         )
 
+
     @abc.abstractmethod
     def construct_array_contraction(self, *contractions, **kwargs):
         """Return the array associated with a contracted Cartesian Gaussian.

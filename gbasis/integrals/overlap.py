@@ -88,10 +88,10 @@ class Overlap(BaseTwoIndexSymmetric):
             raise TypeError("`contractions_one` must be a `GeneralizedContractionShell` instance.")
         if not isinstance(contractions_two, GeneralizedContractionShell):
             raise TypeError("`contractions_two` must be a `GeneralizedContractionShell` instance.")
-
+        # this is called first for self-interactions, and then again for all overlaps in a j>i double loop
         return _compute_multipole_moment_integrals(
-            np.zeros(3),
-            np.zeros((1, 3), dtype=int),
+            np.zeros(3),   # delete at push --> center of moment
+            np.zeros((1, 3), dtype=int), # delete at push --> order of the moment
             # contraction on the left hand side
             contractions_one.coord,
             contractions_one.angmom_components_cart,
@@ -141,5 +141,6 @@ def overlap_integral(basis, transform=None, coord_type="spherical"):
     if coord_type == "cartesian":
         return Overlap(basis).construct_array_cartesian()
     if coord_type == "spherical":
+        print("111111111111111")
         return Overlap(basis).construct_array_spherical()
     return Overlap(basis).construct_array_mix(coord_type)

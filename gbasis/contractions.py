@@ -113,8 +113,9 @@ class GeneralizedContractionShell:
 
 
     """
+    screen = None
 
-    def __init__(self, angmom, coord, coeffs, exps):
+    def __init__(self, angmom, coord, coeffs, exps, screen_mask, index):
         r"""Initialize a GeneralizedContractionShell instance.
 
         Parameters
@@ -141,7 +142,84 @@ class GeneralizedContractionShell:
         self.coord = coord
         self.coeffs = coeffs
         self.exps = exps
+        self.ovr_mask = screen_mask
+        self.index = index
         self.assign_norm_cont()
+        try:
+            if GeneralizedContractionShell.screen == None:
+                GeneralizedContractionShell.screen = np.zeros((6,6))
+        except:
+            pass
+
+    @property
+    def ovr_mask(self):
+        """Overlap mask for this shell.
+
+        Returns
+        -------
+        ovr_mask : np.ndarray(1,)
+            Boolian overlap mask for this shell.
+
+        """
+        return self._ovr_mask
+
+    @ovr_mask.setter
+    def ovr_mask(self, ovr_mask):
+        """Set the overlap mask for this shell.
+
+        Parameters
+        ----------
+        ovr_mask : np.ndarray(1,)
+            Boolian overlap mask for this shell.
+
+        Raises
+        ------
+        TypeError
+            If `ovr_mask` is not a `numpy` array of dimension 1.
+            If `ovr_mask` does not have data type of bool.
+
+        """
+        if not (isinstance(ovr_mask, np.ndarray) ):
+            raise TypeError("The overlap mask must be given as a `numpy` array of dimension 1.")
+        if ovr_mask.dtype != bool:
+            raise TypeError("The data type of the overlap mask must be True or False.")
+
+        self._ovr_mask = ovr_mask
+
+    @property
+    def index(self):
+        """Set the index of this shell.
+
+        Returns
+        -------
+         index : int
+            index of this shell
+
+        """
+        return self._index
+
+    @index.setter
+    def index(self, index):
+        """Set the index of this shell.
+
+        Parameters
+        ----------
+        index : int
+            index of this shell
+
+        Raises
+        ------
+        TypeError
+            If `index` must be a positive integer.
+            If `index` does not have data type of int.
+
+        """
+        if index < 0:
+            raise TypeError("The GeneralizedContractionShell index must be a positive integer.")
+        if type(index) != int:
+            raise TypeError("The data type of the shell index must be int.")
+
+        self._index = index
 
     @property
     def coord(self):
@@ -441,6 +519,9 @@ class GeneralizedContractionShell:
 
         """
         from gbasis.integrals.overlap import Overlap  # pylint: disable=R0401,C0415
-
+        # np.einsum("ijij->ij",A) effectively calculates the diagonal of what Overlap returns
+        # Does not work: np.diagonal(Overlap.construct_array_contraction(self, self).squeeze())
+        # Does not work: np.einsum('ii->i', Overlap.construct_array_contraction(self, self).squeeze())
+        # Does not make sense to implement overlap screening here since all centers are on the same atom.
         self.norm_cont = np.einsum("ijij->ij", Overlap.construct_array_contraction(self, self))
         self.norm_cont **= -0.5

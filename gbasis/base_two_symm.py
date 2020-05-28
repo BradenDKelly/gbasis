@@ -3,6 +3,7 @@ import abc
 
 from gbasis.base import BaseGaussianRelatedArray
 from gbasis.spherical import generate_transformation
+from gbasis.contractions import GeneralizedContractionShell
 import numpy as np
 
 
@@ -205,6 +206,7 @@ class BaseTwoIndexSymmetric(BaseGaussianRelatedArray):
         respect to the swapping of the first two axes.
 
         """
+        print("3333")
         triu_blocks = []
         for i, cont_one in enumerate(self.contractions):
             # get transformation from cartesian to spherical (applied to left)
@@ -221,27 +223,47 @@ class BaseTwoIndexSymmetric(BaseGaussianRelatedArray):
                     cont_two.angmom_components_sph,
                     "left",
                 )
+                ##########################################################
+                #
+                #          Probably pass screen as **kwarg
+                #
+                #             INSERT SCREEN HERE
+                #    if screen[i,j]:
+                #        block_sph = np.zeros(X,Y)
+                #    else:
+                #        block_sph = self.construct_array_contraction(cont_one, cont_two, **kwargs)
+                #
+                ##########################################################
                 # evaluate
-                block_sph = self.construct_array_contraction(cont_one, cont_two, **kwargs)
-                # normalize contractions
-                block_sph *= cont_one.norm_cont.reshape(
-                    *block_sph.shape[:2], *[1 for _ in block_sph.shape[2:]]
-                )
-                block_sph *= cont_two.norm_cont.reshape(
-                    1, 1, *block_sph.shape[2:4], *[1 for _ in block_sph.shape[4:]]
-                )
-                # assume array has shape (M_1, L_1, M_2, L_2, ...)
-                # transform
-                block_sph = np.tensordot(transform_one, block_sph, (1, 1))
-                block_sph = np.concatenate(np.swapaxes(block_sph, 0, 1), axis=0)
-                # array now has shape (M_1 L_1, M_2, L_2, ...)
-                block_sph = np.tensordot(transform_two, block_sph, (1, 2))
-                block_sph = np.swapaxes(np.swapaxes(block_sph, 0, 1), 0, 2)
-                block_sph = np.concatenate(block_sph, axis=0)
-                block_sph = np.swapaxes(block_sph, 0, 1)
-                # array now has shape (M_1 L_1, M_2 L_2, ...)
-                # store
+
+                if cont_one.ovr_mask[cont_two.index]:
+                    # evaluate the overlap integral of these two contraction shells
+                    block_sph = self.construct_array_contraction(cont_one, cont_two, **kwargs)
+
+                    # normalize contractions
+                    block_sph *= cont_one.norm_cont.reshape(
+                        *block_sph.shape[:2], *[1 for _ in block_sph.shape[2:]]
+                    )
+                    block_sph *= cont_two.norm_cont.reshape(
+                        1, 1, *block_sph.shape[2:4], *[1 for _ in block_sph.shape[4:]]
+                    )
+                    # assume array has shape (M_1, L_1, M_2, L_2, ...)
+                    # transform
+                    block_sph = np.tensordot(transform_one, block_sph, (1, 1))
+                    block_sph = np.concatenate(np.swapaxes(block_sph, 0, 1), axis=0)
+                    # array now has shape (M_1 L_1, M_2, L_2, ...)
+                    block_sph = np.tensordot(transform_two, block_sph, (1, 2))
+                    block_sph = np.swapaxes(np.swapaxes(block_sph, 0, 1), 0, 2)
+                    block_sph = np.concatenate(block_sph, axis=0)
+                    block_sph = np.swapaxes(block_sph, 0, 1)
+                    # array now has shape (M_1 L_1, M_2 L_2, ...)
+                    # store
+                else:
+
+                    block_sph = np.zeros((cont_one.num_sph,cont_two.num_sph))
+                print(block_sph)
                 triu_blocks.append(block_sph)
+
         # use numpy triu and tril indices to create blocks
         num_blocks_side = len(self.contractions)
         all_blocks = np.zeros((num_blocks_side, num_blocks_side), dtype=object)
