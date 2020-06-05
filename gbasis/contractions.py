@@ -114,7 +114,7 @@ class GeneralizedContractionShell:
 
     """
 
-    def __init__(self, angmom, coord, coeffs, exps):
+    def __init__(self, angmom, coord, coeffs, exps, indx = -1):
         r"""Initialize a GeneralizedContractionShell instance.
 
         Parameters
@@ -135,13 +135,49 @@ class GeneralizedContractionShell:
             dimension.
         exps : np.ndarray(K,)
             Exponents of the primitives, :math:`\{\alpha_i\}_{i=1}^K`.
+        indx : int
+            Index of this set of contractions. Used for overlap screening.
 
         """
         self.angmom = angmom
         self.coord = coord
         self.coeffs = coeffs
         self.exps = exps
+        self.indx = indx
         self.assign_norm_cont()
+
+    @property
+    def indx(self):
+        """Index of the contractions.
+
+        Returns
+        -------
+        indx : int
+            Index of the contractions. Used for overlap screening.
+
+        """
+        return self._indx
+
+    @indx.setter
+    def indx(self, indx):
+        """Set the index of the contractions.
+
+        Parameters
+        ----------
+        indx : int
+            Index of contraction.
+
+        Raises
+        ------
+        TypeError
+            If `indx` does not have data type of int.
+
+        """
+
+        if type(indx) != int:
+            raise TypeError("The data type of the contraction index must be int")
+
+        self._indx = indx
 
     @property
     def coord(self):
@@ -444,3 +480,58 @@ class GeneralizedContractionShell:
 
         self.norm_cont = np.einsum("ijij->ij", Overlap.construct_array_contraction(self, self))
         self.norm_cont **= -0.5
+
+    def create_overlap_mask(self,basis, eps = 1E-20 ):
+        r""" Create a boolean mask for screening this contractions interactions with all others.
+
+        .. math::
+
+        Parameters
+        ----------
+        basis : (list, tuple) of GeneralizedContractionShells
+            Stores all basis set information i.e., exponents, coords, angular momentum
+        eps : float
+            Tolerance for performing overlap screening.
+        Raises
+        ------
+        TypeError
+            If `basis` is not a list or tuple of GeneralizedContractionShells.
+            If `eps` is not a float.
+        ValueError
+            If `eps` is larger than 1E-1.
+
+        """
+        """
+        Jokes:
+        -----
+        Question: What is a computers favorite beat?        
+        Answer: An algo-rythm
+        """
+        for each_contractions in basis:
+            if not isinstance(each_contractions, GeneralizedContractionShell):
+                raise TypeError(
+                    "Contractions must be given as a list or tuple of `GeneralizedContractionShell`"
+                    " instance"
+                )
+        if not isinstance(eps,float):
+            raise TypeError( "eps must be a float")
+        if eps > 1E-1:
+            raise ValueError("eps must be a very small number")
+        # Tolerance for screening
+        le = np.log(eps)
+        alpha_a = min(self.exps)
+        coord_a = self.coord
+        mask = np.full(len(basis), True)
+        # Proceed to compare this contraction with all others, determine if needing to evaluate overlaps
+        for other_indx, contraction in enumerate(basis):
+            alpha_b = min(contraction.exps)
+            coord_b = contraction.coord
+            cutoff = np.sqrt(-(alpha_a + alpha_b) / (alpha_a * alpha_b) * le)
+            if np.linalg.norm(coord_a - coord_b) > cutoff:
+                mask[other_indx] = False
+
+
+        self.ovr_mask = mask
+        self.overlap = True
+
+
