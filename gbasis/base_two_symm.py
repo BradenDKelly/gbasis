@@ -395,7 +395,6 @@ class BaseTwoIndexSymmetric(BaseGaussianRelatedArray):
         elif coord_type == "spherical":
             array = self.construct_array_spherical(**kwargs)
         elif isinstance(coord_type, (list, tuple)):
-
             array = self.construct_array_mix(coord_type, **kwargs)
         else:
             raise TypeError(
