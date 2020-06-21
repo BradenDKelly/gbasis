@@ -114,7 +114,7 @@ class GeneralizedContractionShell:
 
     """
 
-    def __init__(self, angmom, coord, coeffs, exps, indx = -1):
+    def __init__(self, angmom, coord, coeffs, exps, indx=-1):
         r"""Initialize a GeneralizedContractionShell instance.
 
         Parameters
@@ -174,7 +174,7 @@ class GeneralizedContractionShell:
 
         """
 
-        if type(indx) != int:
+        if not isinstance(indx, int):
             raise TypeError("The data type of the contraction index must be int")
 
         self._indx = indx
@@ -481,8 +481,8 @@ class GeneralizedContractionShell:
         self.norm_cont = np.einsum("ijij->ij", Overlap.construct_array_contraction(self, self))
         self.norm_cont **= -0.5
 
-    def create_overlap_mask(self,basis, eps = 1E-20 ):
-        r""" Create a boolean mask for screening this contractions interactions with all others.
+    def create_overlap_mask(self, basis, eps=1e-20):
+        r"""Create a boolean mask for screening this contractions interactions with all others.
 
         .. math::
 
@@ -501,37 +501,28 @@ class GeneralizedContractionShell:
             If `eps` is larger than 1E-1.
 
         """
-        """
-        Jokes:
-        -----
-        Question: What is a computers favorite beat?        
-        Answer: An algo-rythm
-        """
         for each_contractions in basis:
             if not isinstance(each_contractions, GeneralizedContractionShell):
                 raise TypeError(
                     "Contractions must be given as a list or tuple of `GeneralizedContractionShell`"
                     " instance"
                 )
-        if not isinstance(eps,float):
-            raise TypeError( "eps must be a float")
-        if eps > 1E-1:
+        if not isinstance(eps, float):
+            raise TypeError("eps must be a float")
+        if eps > 1e-1:
             raise ValueError("eps must be a very small number")
         # Tolerance for screening
-        le = np.log(eps)
+        log_exp = np.log(eps)
         alpha_a = min(self.exps)
         coord_a = self.coord
         mask = np.full(len(basis), True)
-        # Proceed to compare this contraction with all others, determine if needing to evaluate overlaps
+        # Proceed to compare this contraction with all others, screen & generate mask.
         for other_indx, contraction in enumerate(basis):
             alpha_b = min(contraction.exps)
             coord_b = contraction.coord
-            cutoff = np.sqrt(-(alpha_a + alpha_b) / (alpha_a * alpha_b) * le)
+            cutoff = np.sqrt(-(alpha_a + alpha_b) / (alpha_a * alpha_b) * log_exp)
             if np.linalg.norm(coord_a - coord_b) > cutoff:
                 mask[other_indx] = False
 
-
         self.ovr_mask = mask
         self.overlap = True
-
-

@@ -205,7 +205,6 @@ class BaseTwoIndexSymmetric(BaseGaussianRelatedArray):
         respect to the swapping of the first two axes.
 
         """
-        print("here")
         triu_blocks = []
         for i, cont_one in enumerate(self.contractions):
             # get transformation from cartesian to spherical (applied to left)

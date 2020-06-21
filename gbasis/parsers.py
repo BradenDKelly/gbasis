@@ -157,10 +157,10 @@ def parse_gbs(gbs_basis_file):
                     output[atom][-1] = (
                         angmom,
                         exps,
-                        np.hstack([output[atom][-1][2], coeffs_seg[:, i: i + 1]]),
+                        np.hstack([output[atom][-1][2], coeffs_seg[:, i : i + 1]]),
                     )
                 else:
-                    output[atom].append((angmom, exps, coeffs_seg[:, i: i + 1]))
+                    output[atom].append((angmom, exps, coeffs_seg[:, i : i + 1]))
 
     return output
 
@@ -203,7 +203,7 @@ def make_contractions(basis_dict, atoms, coords, overlap=False):
         )
     if len(atoms) != coords.shape[0]:
         raise ValueError("Number of atoms must be equal to the number of rows in the coordinates.")
-    if type(overlap) != bool:
+    if not isinstance(overlap, bool):
         raise TypeError("overlap - 4th argument, must be boolean")
 
     index = 0
@@ -214,6 +214,6 @@ def make_contractions(basis_dict, atoms, coords, overlap=False):
             index += 1
     # create overlap masks for screening
     if overlap:
-        for indx, contractions in enumerate(basis):
-            basis[indx].create_overlap_mask(basis)
+        for contractions in enumerate(basis):
+            contractions.create_overlap_mask(basis)
     return tuple(basis)

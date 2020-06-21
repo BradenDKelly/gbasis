@@ -779,7 +779,9 @@ def test_make_contractions():
     with pytest.raises(TypeError):
         make_contractions(basis_dict, ["H", "H"], np.array([[0, 0, 0], [1, 1, 1]]), [0, 0])
     with pytest.raises(TypeError):
-        make_contractions(basis_dict, ["H", "H"], np.array([[0, 0, 0], [1, 1, 1]]), [0, 0], overlap = False)
+        make_contractions(
+            basis_dict, ["H", "H"], np.array([[0, 0, 0], [1, 1, 1]]), [0, 0], overlap=False
+        )
 
     test = make_contractions(basis_dict, ["H", "H"], np.array([[0, 0, 0], [1, 1, 1]]))
     assert isinstance(test, tuple)
@@ -822,6 +824,7 @@ def test_make_contractions():
         test[1].exps,
         np.array([35.52322122, 6.513143725, 1.822142904, 0.625955266, 0.243076747, 0.100112428]),
     )
+
 
 def test_make_contractions_gbs():
     """Test gbasis.contractions.make_contractions."""
@@ -844,75 +847,6 @@ def test_make_contractions_gbs():
     with pytest.raises(TypeError):
         make_contractions(basis_dict, ["H", "H"], np.array([[0, 0, 0], [1, 1, 1]]), [0, 0])
     with pytest.raises(TypeError):
-        make_contractions(basis_dict, ["H", "H"], np.array([[0, 0, 0], [1, 1, 1]]), [0, 0], overlap = False)
-
-    test = make_contractions(basis_dict, ["H", "H"], np.array([[0, 0, 0], [1, 1, 1]]))
-    """
-    TODO need to go over this and make suitable for 6-31G gbs, currently set for STO-6G nwchem
-    assert isinstance(test, tuple)
-    assert len(test) == 2
-    assert test[0].angmom == 0
-    assert np.allclose(test[0].coord, np.array([0, 0, 0]))
-    assert np.allclose(
-        test[0].coeffs,
-        np.array(
-            [
-                0.00916359628,
-                0.04936149294,
-                0.16853830490,
-                0.37056279970,
-                0.41649152980,
-                0.13033408410,
-            ]
-        ).reshape(6, 1),
-    )
-    assert np.allclose(
-        test[0].exps,
-        np.array([35.52322122, 6.513143725, 1.822142904, 0.625955266, 0.243076747, 0.100112428]),
-    )
-    assert test[1].angmom == 0
-    assert np.allclose(test[1].coord, np.array([1, 1, 1]))
-    assert np.allclose(
-        test[1].coeffs,
-        np.array(
-            [
-                0.00916359628,
-                0.04936149294,
-                0.16853830490,
-                0.37056279970,
-                0.41649152980,
-                0.13033408410,
-            ]
-        ).reshape(6, 1),
-    )
-    assert np.allclose(
-        test[1].exps,
-        np.array([35.52322122, 6.513143725, 1.822142904, 0.625955266, 0.243076747, 0.100112428]),
-    )
-    """
-
-def test_overlap_screening():
-    """Test that the overlap screening mask has been correctly created for several cases"""
-    basis_dict = parse_gbs(find_datafile("data_631g.gbs"))
-
-    # Test 1
-    contraction = make_contractions(basis_dict, ["H", "H"], np.array([[0, 0, 0], [1, 1, 1]]))
-    # tolerance for overlap is by default 1E-20. To change add tol = X as the end argument
-    contraction[0].create_overlap_mask(contraction)
-    if not any(contraction[0].ovr_mask):
-        raise ValueError("Two hydrogens at this distance should require overlap calculations")
-
-    # Test 2
-    contraction = make_contractions(basis_dict, ["H", "H"], np.array([[0, 0, 0], [1, 1, 20]]))
-    alpha_a  = alpha_b = min(contraction[0].exps)
-    rij = np.linalg.norm(np.array([0, 0, 0]) - np.array([1, 1, 10]))
-    cutoff = np.sqrt(-(alpha_a + alpha_b) / (alpha_a * alpha_b) * np.log(1E-20))
-    # tolerance for overlap is by default 1E-20. To change add tol = X to make_contractions()
-    contraction[0].create_overlap_mask(contraction)
-    if contraction[0].ovr_mask[2] or contraction[0].ovr_mask[2]:
-        raise ValueError("Two hydrogens at this distance should NOT require overlap calculations"
-                         " distance is {} and cutoff distance is {}".format(
-                        rij, cutoff))
-    if not contraction[0].ovr_mask[0] or not contraction[0].ovr_mask[1]:
-        raise ValueError("Self overlaps should not be skipped in overlap screening")
-
+        make_contractions(
+            basis_dict, ["H", "H"], np.array([[0, 0, 0], [1, 1, 1]]), [0, 0], overlap=False
+        )
